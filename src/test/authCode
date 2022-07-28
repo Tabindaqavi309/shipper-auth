@@ -1,0 +1,72 @@
+package com.oldsailor.authSrv
+
+ import JWTAuthorizationFilter
+ import com.oldsailor.authSrv.exception.CustomAuthenticationFailureHandler
+ import org.springframework.context.annotation.Configuration
+ import org.springframework.core.annotation.Order
+ import org.springframework.http.HttpMethod
+ import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder
+ import org.springframework.security.config.annotation.web.builders.HttpSecurity
+ import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+ import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
+ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+ import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+
+
+@EnableWebSecurity
+@Configuration
+@Order(1)
+class BasicAuthSecurity : WebSecurityConfigurerAdapter() {
+
+    override fun configure(auth: AuthenticationManagerBuilder) {
+        auth.inMemoryAuthentication()
+            .passwordEncoder(BCryptPasswordEncoder())
+            .withUser("user")
+            .password("$2a$10$5mopZhNvRhFXgwmSzS7eguQydYtP9RebahZzMl0Ke4LliMLD877am")
+            .roles("USER")
+    }
+
+//    override fun configure(http: HttpSecurity) {
+//        http.csrf()
+//            .disable()
+//            .authorizeRequests()
+//            .anyRequest()
+//            .authenticated()
+//            .and()
+//            .httpBasic()
+//            .and()
+//            .exceptionHandling().authenticationEntryPoint(CustomAuthenticationFailureHandler())
+//
+//    }
+
+    @Throws(Exception::class)
+    override fun configure(http: HttpSecurity) {
+        http.csrf().disable()
+            .addFilterAfter(JWTAuthorizationFilter(), UsernamePasswordAuthenticationFilter::class.java)
+            .authorizeRequests()
+            .antMatchers(HttpMethod.GET, "/api/auth-srv/admin/test").permitAll()
+            .anyRequest().authenticated()
+    }
+
+}
+
+
+//@EnableWebSecurity
+//@Configuration
+//@Order(2)
+//class JwtWebSecurityConfig : WebSecurityConfigurerAdapter() {
+//
+//
+//    @Throws(Exception::class)
+//    override fun configure(http: HttpSecurity) {
+//        http.csrf().disable()
+//            .addFilterAfter(JWTAuthorizationFilter(), UsernamePasswordAuthenticationFilter::class.java)
+//            .authorizeRequests()
+//            .antMatchers(HttpMethod.GET, "/api/auth-srv/admin/test").permitAll()
+//            .anyRequest().authenticated()
+//    }
+//
+//}
+
+
+
