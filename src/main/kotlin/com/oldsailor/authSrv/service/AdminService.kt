@@ -2,13 +2,14 @@ package com.oldsailor.authSrv.service;
 
 import com.oldsailor.authSrv.model.AdminModel
 import com.oldsailor.authSrv.model.UpdateAdminModel
+import com.oldsailor.authSrv.model.dto.UpdatePasswordModel
 import com.oldsailor.authSrv.repository.AdminRepository
 import com.oldsailor.authSrv.repository.UpdateAdminRepository
 import com.oldsailor.authSrv.utils.createJWT
 import com.oldsailor.authSrv.utils.encryptPassword
+import io.jsonwebtoken.Jwts
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
-import java.security.SecureRandom
 
 @Service
 class AdminService(
@@ -16,7 +17,9 @@ class AdminService(
     val dbUpdate: UpdateAdminRepository,
 ) {
 
-    fun findAdmins(): List<AdminModel> = db.findAdmins()
+    fun findAdmins( ): List<AdminModel> {
+      return db.findAdmins()
+    }
 
     fun findByEmail(email: String) = db.findByEmail(email)
 
@@ -56,5 +59,22 @@ class AdminService(
                 }
             }
         }
+    }
+
+    fun updatePassword(header: String, updatePasswordModel: UpdatePasswordModel): Unit {
+        val jwtToken = header.replace("Bearer ", "")
+        val claim =
+            Jwts.parser().setSigningKey("oldsailorsdbSecretKey".toByteArray()).parseClaimsJws(jwtToken).body.subject
+
+        dbUpdate.findById(claim.toInt()).ifPresentOrElse({ it ->
+            val encoder: BCryptPasswordEncoder = BCryptPasswordEncoder()
+            if (encoder.matches(updatePasswordModel.oldPassword, it.password)) {
+                it.password = encryptPassword(updatePasswordModel.newPassword)
+                dbUpdate.save(it)
+            } else {
+                throw Exception("Incorrect Old password")
+            }
+        }, { throw Exception("Not found") });
+
     }
 }
